@@ -1,0 +1,147 @@
+import axios from 'axios';
+export const ADD_TO_CART = 'ADD_TO_CART';
+export const REMOVE_FROM_CART = 'REMOVE_FROM_CART';
+export const INCREMENT_QTY = 'INCREMENT_QTY';
+export const DECREMENT_QTY = 'DECREMENT_QTY';
+export const CLEAR_CART = 'CLEAR_CART'; // Action for clearing the cart
+
+// Add item to cart and send request to API
+export const addToCart = (product) => async (dispatch) => {
+  try {
+    const response = await axios.post('http://localhost:3000/api/cart/add', { product });
+    dispatch({
+      type: ADD_TO_CART,
+      payload: response.data, // Assuming the response contains the updated product
+    });
+  } catch (error) {
+    console.error('Error adding to cart:', error);
+  }
+};
+
+// Remove item from cart and send request to API
+export const removeFromCart = (productId, userId) => async (dispatch) => {
+  try {
+    const response = await axios.post(
+      `http://localhost:3000/api/cart/remove/${productId}/${userId}`
+    );
+    dispatch({
+      type: REMOVE_FROM_CART,
+      payload: productId,
+    });
+  } catch (error) {
+    console.error('Error removing from cart:', error);
+  }
+};
+
+// Increment quantity in cart and update on the API
+export const incrementQty = (productId) => async (dispatch) => {
+  try {
+    const response = await axios.put(`http://localhost:3000/api/cart/update`, { productId, action: 'increment' });
+    dispatch({
+      type: INCREMENT_QTY,
+      payload: productId,
+    });
+  } catch (error) {
+    console.error('Error incrementing quantity:', error);
+  }
+};
+
+// Decrement quantity in cart and update on the API
+export const decrementQty = (productId) => async (dispatch) => {
+  try {
+    const response = await axios.put(`http://localhost:3000/api/cart/update`, { productId, action: 'decrement' });
+    dispatch({
+      type: DECREMENT_QTY,
+      payload: productId,
+    });
+  } catch (error) {
+    console.error('Error decrementing quantity:', error);
+  }
+};
+
+// Clear cart and reset on the API
+export const clearCart = () => async (dispatch) => {
+  try {
+    await axios.post('http://localhost:3000/api/cart/clear');
+    dispatch({
+      type: CLEAR_CART,
+    });
+  } catch (error) {
+    console.error('Error clearing cart:', error);
+  }
+};
+
+
+
+import { ADD_TO_CART, REMOVE_FROM_CART, INCREMENT_QTY, DECREMENT_QTY, CLEAR_CART } from '../actions/actionsCart';
+
+const initialState = {
+  cart: [],
+};
+
+const cartReducer = (state = initialState, action) => {
+  switch (action.type) {
+    case ADD_TO_CART:
+      const existingItem = state.cart.find((item) => item.id === action.payload.id);
+      if (existingItem) {
+        return {
+          ...state,
+          cart: state.cart.map((item) =>
+            item.id === action.payload.id
+              ? { ...item, qty: item.qty + 1, total: (item.qty + 1) * item.price }
+              : item
+          ),
+        };
+      } else {
+        return {
+          ...state,
+          cart: [
+            ...state.cart,
+            { ...action.payload, qty: 1, total: action.payload.price },
+          ],
+        };
+      }
+
+    case REMOVE_FROM_CART:
+      return {
+        ...state,
+        cart: state.cart.filter((item) => item.id !== action.payload),
+      };
+
+    case INCREMENT_QTY:
+      return {
+        ...state,
+        cart: state.cart.map((item) =>
+          item.id === action.payload
+            ? { ...item, qty: item.qty + 1, total: (item.qty + 1) * item.price }
+            : item
+        ),
+      };
+
+    case DECREMENT_QTY:
+      return {
+        ...state,
+        cart: state.cart.map((item) =>
+          item.id === action.payload && item.qty > 1
+            ? { ...item, qty: item.qty - 1, total: (item.qty - 1) * item.price }
+            : item
+        ),
+      };
+
+    case CLEAR_CART:
+      return {
+        ...state,
+        cart: [],
+      };
+
+    default:
+      return state;
+  }
+};
+
+export default cartReducer;
+
+
+
+
+

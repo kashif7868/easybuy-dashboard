@@ -1,0 +1,314 @@
+/* Main wrapper for the authentication page */
+.auth-container-main-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background: linear-gradient(135deg, #ffffff 50%, #b8ffd5 50%);
+    padding: 0 10px; /* Added for better alignment on smaller screens */
+  }
+  
+  /* Auth container */
+  .auth-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%; /* Make it responsive */
+    max-width: 1200px;
+    padding: 20px;
+    gap: 20px; /* Adds space between left and right containers */
+  }
+  
+  /* Left section (Branding) */
+  .auth-left-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 30px;
+    animation: zoomInLogo 1s ease-in-out;
+  }
+  
+  .dashboard-content-container {
+    text-align: left;
+  }
+  
+  .dashboard-content-container h2 {
+    font-size: 32px;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 10px;
+  }
+  
+  .dashboard-content-container p {
+    font-size: 18px;
+    color: #333;
+    line-height: 1.6;
+  }
+  
+  /* Right section (Form) */
+  .auth-right-container {
+    flex: 1;
+    background-color: #fff;
+    border-radius: 0 8px 8px 0;
+    padding: 30px 40px;
+    max-width: 420px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    border: 1px solid #ddd;
+    position: relative;
+    animation: zoomIn 1s ease-in-out;
+    min-width: 300px; /* Ensures that the form doesn't collapse too much */
+  }
+  
+  /* Title */
+  .auth-title {
+    text-align: center;
+    font-size: 26px;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 20px;
+  }
+  
+  /* Error message */
+  .auth-error {
+    color: #ff3333;
+    font-size: 14px;
+    margin-bottom: 15px;
+    text-align: center;
+  }
+  
+  /* Form Group */
+  .auth-form-group {
+    position: relative;
+    margin-bottom: 20px;
+  }
+  
+  .auth-input {
+    width: 100%;
+    padding: 12px 12px 12px 36px;
+    font-size: 16px;
+    border: 1px solid #333;
+    border-radius: 6px;
+    background-color: #fff;
+    color: #333;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    box-sizing: border-box;
+  }
+  
+  .auth-input:focus {
+    border-color: #01cf57;
+    box-shadow: 0 0 6px #01cf57;
+  }
+  
+  .auth-icon {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #333;
+    font-size: 18px;
+  }
+  
+  .auth-label {
+    position: absolute;
+    top: 12px;
+    left: 40px;
+    font-size: 14px;
+    color: #333;
+    transition: all 0.3s ease;
+  }
+  
+  .auth-input:focus ~ .auth-label,
+  .auth-input:not(:placeholder-shown) ~ .auth-label {
+    top: -10px;
+    left: 35px;
+    font-size: 12px;
+    color: #333;
+    background-color: #fff;
+    padding: 0 5px;
+    border-radius: 4px;
+  }
+  
+  /* Password Field */
+  .password-field {
+    position: relative;
+  }
+  
+  .auth-password-toggle {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    color: #888;
+    font-size: 20px;
+    transition: color 0.3s ease;
+  }
+  
+  .auth-password-toggle:hover {
+    color: #01cf57;
+  }
+  
+  /* Button Styles */
+  .auth-btn {
+    width: 100%;
+    padding: 12px;
+    font-size: 16px;
+    border: none;
+    border-radius: 6px;
+    background-color: #01cf57;
+    color: #fff;
+    cursor: pointer;
+    transition: all ease-in-out 0.3s;
+    margin-bottom: 20px;
+  }
+  
+  .auth-btn:hover {
+    transform: scale(1.05);
+    background-color: #01b746;
+    color: #fff;
+  }
+  
+  /* Forgot Password Section */
+  .auth-forgot-password {
+    text-align: right;
+  }
+  
+  .auth-forgot-password .auth-toggle {
+    font-size: 14px;
+    color: #333;
+    font-weight: 500;
+    text-decoration: underline;
+    cursor: pointer;
+    transition: color 0.3s ease;
+  }
+  
+  .auth-forgot-password .auth-toggle:hover {
+    color: #01cf57;
+  }
+  
+  /* Switch Between Sign In/Sign Up */
+  .auth-switch {
+    text-align: center;
+    margin-top: 20px;
+  }
+  
+  /* Animations */
+  @keyframes zoomIn {
+    0% {
+      transform: scale(0.8);
+      opacity: 0;
+    }
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+  
+  @keyframes zoomInLogo {
+    0% {
+      transform: scale(0.8);
+      opacity: 0;
+    }
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+  
+  /* Mobile Responsiveness */
+  @media (max-width: 1024px) {
+    .auth-container {
+      flex-direction: column;
+      padding: 20px;
+    }
+  
+    .auth-left-container {
+      flex: none;
+      margin-bottom: 20px;
+      padding: 20px;
+      text-align: center;
+    }
+  
+    .auth-right-container {
+      width: 100%;
+      padding: 20px;
+    }
+  
+    .dashboard-content-container h2 {
+      font-size: 28px;
+    }
+  
+    .dashboard-content-container p {
+      font-size: 16px;
+    }
+  
+    .auth-title {
+      font-size: 24px;
+    }
+  
+    .auth-btn {
+      font-size: 14px;
+      padding: 10px;
+    }
+  
+    .auth-input {
+      font-size: 14px;
+    }
+  
+    .auth-label {
+      font-size: 13px;
+    }
+  }
+  
+  @media (max-width: 768px) {
+    .auth-container {
+      padding: 10px;
+    }
+  
+    .auth-right-container {
+      padding: 15px;
+    }
+  
+    .auth-btn {
+      font-size: 12px;
+      padding: 8px;
+    }
+  
+    .auth-input {
+      font-size: 12px;
+    }
+  
+    .auth-title {
+      font-size: 22px;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .auth-logo {
+      width: 120px;
+    }
+  
+    .auth-right-container {
+      padding: 10px;
+    }
+  
+    .auth-title {
+      font-size: 20px;
+    }
+  
+    .auth-btn {
+      font-size: 12px;
+      padding: 8px;
+    }
+  
+    .auth-input {
+      font-size: 12px;
+    }
+  
+    .auth-label {
+      font-size: 12px;
+    }
+  }
+  
