@@ -46,6 +46,18 @@ export const createSliderImage = createAsyncThunk<SliderImage, FormData>(
     return response.data;
   }
 );
+// Async thunk to update a slider image using FormData (PATCH request)
+export const updateSliderImage = createAsyncThunk<SliderImage, { id: number, formData: FormData }>(
+  'slider/updateSliderImage',
+  async ({ id, formData }) => {
+    const response = await axios.patch(`http://localhost:8000/api/slider/${id}`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  }
+);
 
 // Async thunk to delete a slider image by ID
 export const deleteSliderImage = createAsyncThunk<void, number>(

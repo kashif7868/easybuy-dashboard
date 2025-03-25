@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { createBanner } from '../../app/reducer/bannerSlice';
+import { fetchSubCategories, selectSubCategories } from '../../app/reducer/subCategorySlice';
 import Button from "../../components/ui/button/Button";
 
 // Dummy categories for example. Replace with actual categories from your API or database.
@@ -30,6 +31,9 @@ const AddBanner: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
+  // Fetch the subcategories based on selected category
+  const subcategories = useSelector(selectSubCategories);
+
   // Handle input changes
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -48,8 +52,20 @@ const AddBanner: React.FC = () => {
         ...prevData,
         category_id: category.id,
         category_name: category.name,
+        subcategory_name: '', // Clear the subcategory when category changes
       }));
+
+      // Fetch subcategories based on selected category
+      dispatch(fetchSubCategories(value)); // Adjust according to how your API or state works
     }
+  };
+
+  // Handle subcategory change
+  const handleSubcategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setFormData((prevData) => ({
+      ...prevData,
+      subcategory_name: e.target.value,
+    }));
   };
 
   // Handle image change
@@ -124,19 +140,27 @@ const AddBanner: React.FC = () => {
           </select>
         </div>
 
-        {/* Subcategory Name */}
-        <div>
-          <label htmlFor="subcategory_name" className="block text-sm font-medium text-gray-700">Subcategory Name</label>
-          <input
-            type="text"
-            id="subcategory_name"
-            name="subcategory_name"
-            value={formData.subcategory_name}
-            onChange={handleChange}
-            className="mt-2 block w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            required
-          />
-        </div>
+        {/* Subcategory Selection */}
+        {formData.category_id && (
+          <div>
+            <label htmlFor="subcategory_name" className="block text-sm font-medium text-gray-700">Subcategory</label>
+            <select
+              id="subcategory_name"
+              name="subcategory_name"
+              value={formData.subcategory_name}
+              onChange={handleSubcategoryChange}
+              className="mt-2 block w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+            >
+              <option value="" disabled>Select Subcategory</option>
+              {subcategories.map((subcategory) => (
+                <option key={subcategory.id} value={subcategory.subCategoryName}>
+                  {subcategory.subCategoryName}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         {/* Image Upload */}
         <div>

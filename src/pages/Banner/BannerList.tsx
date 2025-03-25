@@ -4,6 +4,7 @@ import { fetchBanners, selectBanners, selectBannerStatus, selectBannerError, del
 import { Table, TableBody, TableCell, TableHeader, TableRow } from "../../components/ui/table";
 import Button from "../../components/ui/button/Button";
 import { FaEye, FaEdit, FaTrash } from 'react-icons/fa'; // Importing React Icons
+import { Link } from 'react-router-dom'; // Import Link for navigation
 
 // Define the interface for the banner data
 interface Banner {
@@ -76,6 +77,7 @@ const BannerList: React.FC = () => {
           />
         </div>
       </div>
+
       <div className="max-w-full overflow-x-auto">
         <Table>
           {/* Table Header */}
@@ -155,12 +157,16 @@ const BannerList: React.FC = () => {
                   {new Date(banner.updated_at).toLocaleString()}
                 </TableCell>
                 <TableCell className="py-3">
-                  <Button className="mr-2">
-                    <FaEye /> {/* View Icon */}
-                  </Button>
-                  <Button className="mr-2" onClick={() => alert(`Editing banner with ID: ${banner.id}`)}>
-                    <FaEdit /> {/* Edit Icon */}
-                  </Button>
+                  <Link to={`/view-banner/${banner.id}`} className="mr-2">
+                    <Button className="mr-2">
+                      <FaEye /> {/* View Icon */}
+                    </Button>
+                  </Link>
+                  <Link to={`/update-banner/${banner.id}`} className="mr-2">
+                    <Button className="mr-2">
+                      <FaEdit /> {/* Edit Icon */}
+                    </Button>
+                  </Link>
                   <Button variant="danger" onClick={() => handleDelete(banner.id)}>
                     <FaTrash /> {/* Delete Icon */}
                   </Button>

@@ -9,6 +9,8 @@ import AddSlider from "../../pages/Slider/AddSlider";
 import DetailsSilder from "../../pages/Slider/DetailsSlider";
 import UpdateSlider from "../../pages/Slider/UpdateSlider";
 import BannerList from "../../pages/Banner/BannerList";
+import ViewBanner from "../../pages/Banner/ViewBanner";
+import UpdateBanner from "../../pages/Banner/UpdateBanner";
 import AddBanner from "../../pages/Banner/AddBanner";
 import AddCategory from "../../pages/Category/AddCategory";
 import CategoryList from "../../pages/Category/CategoryList";
@@ -36,6 +38,8 @@ const AllPages = () => {
         {/* banner */}
         <Route path="/banner-list" element={<BannerList />} />
         <Route path="/add-banner" element={<AddBanner />} />
+        <Route path="/view-banner/:id" element={<ViewBanner />} />
+        <Route path="/update-banner/:id" element={<UpdateBanner />} />
         {/* Category */}
         <Route path="/category-list" element={<CategoryList />} />
         <Route path="/add-category" element={<AddCategory />} />

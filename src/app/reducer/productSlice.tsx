@@ -94,6 +94,7 @@ export const fetchProductById = createAsyncThunk<Product, number, { rejectValue:
 );
 
 // Create a new product
+// Create a new product
 export const createProduct = createAsyncThunk<Product, FormData, { rejectValue: string }>(
   'product/createProduct',
   async (formData, { rejectWithValue }) => {
@@ -105,10 +106,13 @@ export const createProduct = createAsyncThunk<Product, FormData, { rejectValue: 
       });
       return response.data;
     } catch (error: any) {
+      // Log the error response to the console for debugging
+      console.error(error.response?.data || error.message);
       return rejectWithValue(error.response?.data || error.message);
     }
   }
 );
+
 
 // Update a product
 export const updateProduct = createAsyncThunk<Product, { id: number; formData: FormData }, { rejectValue: string }>(

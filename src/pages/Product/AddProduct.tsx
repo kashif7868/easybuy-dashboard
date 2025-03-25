@@ -1,532 +1,303 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchCategories } from '../../app/reducer/categorySlice';
-import { fetchSubCategories } from '../../app/reducer/subCategorySlice';
-import { fetchSmallCategories } from '../../app/reducer/smallCategorySlice';
-import { createProduct } from '../../app/reducer/productSlice'; // Assuming createProduct action exists
-import { useNavigate } from 'react-router-dom'; // For navigation after adding a product
-import Button from '../../components/ui/button/Button'; // Assuming you have a Button component
+import { createProduct } from '../../app/reducer/productSlice';
+import { fetchCategories, selectCategories } from '../../app/reducer/categorySlice';
+import { fetchSubCategories, selectSubCategories } from '../../app/reducer/subCategorySlice';
+import { fetchSmallCategories, selectSmallCategories } from '../../app/reducer/smallCategorySlice';
+import { FaImage, FaTimesCircle } from 'react-icons/fa';
+import Button from '../../components/ui/button/Button';
 
 const AddProduct: React.FC = () => {
-    const dispatch = useDispatch();
-    const navigate = useNavigate();
+    const dispatch = useDispatch<any>();
+    const categories = useSelector(selectCategories);
+    const subcategories = useSelector(selectSubCategories);
+    const smallCategories = useSelector(selectSmallCategories);
+    const error = useSelector((state: any) => state.product.error); // Get error from Redux store
 
-    // States for form inputs
-    const [productData, setProductData] = useState({
+    // State to manage form data and success message
+    const [formData, setFormData] = useState({
         name: '',
+        description: '',
         price: '',
         discount_price: '',
         discount_percentage: '',
         rating: '',
         reviews: '',
-        description: '',
         color: '',
         brand: '',
         meter: '',
         size: '',
         items_stock: '',
-        category_id: '',
-        subcategory_id: '',
-        small_category_id: '',
+        category_id: '', // Use category_id instead of category_name
+        subcategory_id: '', // Use subcategory_id instead of subcategory_name
+        small_category_id: '', // Use small_category_id instead of small_category_name
+        images: null, // Main image (single file)
+        additional_images: [], // Multiple additional images
         featured: false,
         deal_of_the_day: false,
         best_seller: false,
-        top_offer_product: false,
+        top_offer_product: false
     });
+    const [successMessage, setSuccessMessage] = useState(''); // Success message state
 
-    const [productImage, setProductImage] = useState<File | null>(null);
-    const [productImagePreview, setProductImagePreview] = useState<string | null>(null);
-    const [additionalImages, setAdditionalImages] = useState<FileList | null>(null);
-    const [additionalImagesPreviews, setAdditionalImagesPreviews] = useState<string[]>([]);
-    const [error, setError] = useState<string | null>(null);
-    const [isLoading, setIsLoading] = useState<boolean>(false);
-
-    // Fetch categories, subcategories, and small categories from the store
-    const categories = useSelector((state: any) => state.category.categories || []);
-    const subcategories = useSelector((state: any) => state.subCategory.subcategories || []);
-    const smallCategories = useSelector((state: any) => state.smallCategory.smallCategories || []);
-
-    // Filter subcategories based on selected category
-    const filteredSubcategories = subcategories.filter(
-        (subCategory) => subCategory.category_id === Number(productData.category_id)
-    );
-
-    // Filter small categories based on selected subcategory
-    const filteredSmallCategories = smallCategories.filter(
-        (smallCategory) => smallCategory.subcategory_id === Number(productData.subcategory_id)
-    );
-    // Fetch data when component loads
     useEffect(() => {
         dispatch(fetchCategories());
         dispatch(fetchSubCategories());
         dispatch(fetchSmallCategories());
     }, [dispatch]);
 
-    // Handle input changes
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | HTMLButtonElement>) => {
-        const { name, value, type, checked } = e.target;
-        setProductData((prevData) => ({
-            ...prevData,
-            [name]: type === 'checkbox' ? checked : value,
-        }));
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+        const { name, value } = e.target;
+        let updatedFormData = { ...formData, [name]: value };
+
+        // Calculate discount percentage when price or discount_price changes
+        if (name === 'price' || name === 'discount_price') {
+            const price = parseFloat(updatedFormData.price);
+            const discountPrice = parseFloat(updatedFormData.discount_price);
+
+            if (!isNaN(price) && !isNaN(discountPrice) && price > 0) {
+                const discountPercentage = ((price - discountPrice) / price) * 100;
+                updatedFormData.discount_percentage = discountPercentage.toFixed(2);
+            } else {
+                updatedFormData.discount_percentage = '';
+            }
+        }
+
+        setFormData(updatedFormData);
     };
 
-    // Handle file selection for product image
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files) {
-            setProductImage(e.target.files[0]);
-            setProductImagePreview(URL.createObjectURL(e.target.files[0])); // Set the preview
+        if (e.target.files && e.target.files[0]) {
+            setFormData({ ...formData, images: e.target.files[0] });
         }
     };
 
-    // Handle file selection for additional images
+    const handleRemoveImage = () => {
+        setFormData({ ...formData, images: null });
+    };
+
     const handleAdditionalImagesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {
-            setAdditionalImages(e.target.files);
-            const previews = Array.from(e.target.files).map((file) => URL.createObjectURL(file));
-            setAdditionalImagesPreviews((prevPreviews) => [...prevPreviews, ...previews]); // Add previews for additional images
+            setFormData({
+                ...formData,
+                additional_images: [...formData.additional_images, ...Array.from(e.target.files)]
+            });
         }
     };
 
-    // Handle removal of additional images
-    const handleRemoveImage = (index: number) => {
-        const updatedPreviews = [...additionalImagesPreviews];
-        updatedPreviews.splice(index, 1);
-        setAdditionalImagesPreviews(updatedPreviews);
-
-        const updatedImages = [...(additionalImages ? Array.from(additionalImages) : [])];
+    const handleRemoveAdditionalImage = (index: number) => {
+        const updatedImages = [...formData.additional_images];
         updatedImages.splice(index, 1);
-        setAdditionalImages(updatedImages as FileList);
+        setFormData({ ...formData, additional_images: updatedImages });
     };
 
-    // Handle form submission
+    const validateForm = () => {
+        // Validate form to ensure all required fields are filled
+        if (
+            !formData.name ||
+            !formData.price ||
+            !formData.discount_price ||
+            !formData.rating ||
+            !formData.category_id || // Ensure category_id is selected
+            !formData.subcategory_id || // Ensure subcategory_id is selected
+            !formData.small_category_id || // Ensure small_category_id is selected
+            !formData.images // Main image must be provided (changed from image to images)
+        ) {
+            return false;
+        }
+
+        // Validate rating is a number between 1 and 5
+        if (isNaN(parseFloat(formData.rating)) || parseFloat(formData.rating) < 1 || parseFloat(formData.rating) > 5) {
+            return false;
+        }
+
+        return true;
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-
-        if (!productData.name || !productData.price || !productImage) {
-            setError('Please fill in all required fields and upload an image.');
+        
+        if (!validateForm()) {
+            alert("Please fill in all required fields, and ensure rating is between 1 and 5.");
             return;
         }
 
-        setIsLoading(true);
-        setError(null);
+        const productData = new FormData();
+        Object.entries(formData).forEach(([key, value]) => {
+            if (value && key !== 'additional_images') {
+                productData.append(key, value as string);
+            }
+        });
 
-        // Prepare the form data for product creation
-        const formData = new FormData();
-        formData.append('name', productData.name);
-        formData.append('price', productData.price);
-        formData.append('discount_price', productData.discount_price);
-        formData.append('discount_percentage', productData.discount_percentage);
-        formData.append('rating', productData.rating);
-        formData.append('reviews', productData.reviews);
-        formData.append('description', productData.description);
-        formData.append('color', productData.color);
-        formData.append('brand', productData.brand);
-        formData.append('meter', productData.meter);
-        formData.append('size', productData.size);
-        formData.append('items_stock', productData.items_stock);
-        formData.append('category_id', productData.category_id);
-        formData.append('subcategory_id', productData.subcategory_id);
-        formData.append('small_category_id', productData.small_category_id);
-        formData.append('featured', String(productData.featured));
-        formData.append('deal_of_the_day', String(productData.deal_of_the_day));
-        formData.append('best_seller', String(productData.best_seller));
-        formData.append('top_offer_product', String(productData.top_offer_product));
+        // Add main image to FormData (required, now using 'images' as the field name)
+        if (formData.images) {
+            productData.append('images', formData.images);
+        }
 
-        if (productImage) formData.append('images', productImage);
-
-        if (additionalImages) {
-            Array.from(additionalImages).forEach((image) => {
-                formData.append('additional_images', image);
+        // Add additional images to FormData (multiple)
+        if (formData.additional_images.length) {
+            formData.additional_images.forEach((img, index) => {
+                productData.append(`additional_images[${index}]`, img);
             });
         }
 
         try {
-            // Dispatch action to create product
-            await dispatch(createProduct(formData));
-
-            // Navigate to product list or other page
-            navigate('/product-list');
+            await dispatch(createProduct(productData)).unwrap();
+            setSuccessMessage('Product added successfully!'); // Show success message
         } catch (err) {
-            setError('Error creating product. Please try again.');
-        } finally {
-            setIsLoading(false);
+            console.error('Product creation failed', err);
         }
     };
 
     return (
-        <div className="container mx-auto p-8">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-                {/* Left Side: Product Details */}
-                <div className="space-y-6">
-                    <h3 className="text-2xl font-semibold text-gray-800">Add New Product</h3>
-                    <h4 className="text-lg font-medium text-gray-600">Basic Information</h4>
-                    <p className="text-gray-500 text-sm">Section to configure basic product information</p>
+        <div className="container mx-auto p-4 bg-white">
+            <h1 className="text-2xl font-bold mb-4">Add New Product</h1>
 
-                    {/* Display error message */}
-                    {error && (
-                        <div className="bg-red-100 text-red-800 p-4 mb-4 rounded-md">{error}</div>
-                    )}
+            {/* Display error if exists */}
+            {error && (
+                <div className="bg-red-200 text-red-800 p-4 mb-4 rounded">
+                    {/* Display error messages */}
+                    {typeof error === 'string' ? error : (error?.message || Object.values(error?.errors || {}).join(', '))}
+                </div>
+            )}
 
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                        {/* Category Dropdown */}
-                        <div>
-                            <label htmlFor="category_id" className="block text-sm font-medium text-gray-700">Category</label>
-                            <select
-                                id="category_id"
-                                name="category_id"
-                                value={productData.category_id}
-                                onChange={handleInputChange}
-                                className="mt-2 block w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                required
-                            >
-                                <option value="">Select Category</option>
-                                {categories && categories.map((category: { id: number; category_name: string }) => (
-                                    <option key={category.id} value={category.id}>
-                                        {category.category_name}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
+            {/* Success Message */}
+            {successMessage && (
+                <div className="bg-green-200 text-green-800 p-4 mb-4 rounded">
+                    {successMessage}
+                </div>
+            )}
 
-                        <div>
-                            <label htmlFor="subcategory_id" className="block text-sm font-medium text-gray-700">Subcategory</label>
-                            <select
-                                id="subcategory_id"
-                                name="subcategory_id"
-                                value={productData.subcategory_id}
-                                onChange={handleInputChange}
-                                className="mt-2 block w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                required
-                            >
-                                <option value="">Select Subcategory</option>
-                                {filteredSubcategories.length > 0 ? (
-                                    filteredSubcategories.map((subcategory: { id: number; subCategoryName: string }) => (
-                                        <option key={subcategory.id} value={subcategory.id}>
-                                            {subcategory.subCategoryName}
-                                        </option>
-                                    ))
-                                ) : (
-                                    <option value="">No subcategories available</option>
-                                )}
-                            </select>
-                        </div>
-
-                        <div>
-                            <label htmlFor="small_category_id" className="block text-sm font-medium text-gray-700">Small Category</label>
-                            <select
-                                id="small_category_id"
-                                name="small_category_id"
-                                value={productData.small_category_id}
-                                onChange={handleInputChange}
-                                className="mt-2 block w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                required
-                            >
-                                <option value="">Select Small Category</option>
-                                {filteredSmallCategories.length > 0 ? (
-                                    filteredSmallCategories.map((smallCategory: { id: number; small_category_name: string }) => (
-                                        <option key={smallCategory.id} value={smallCategory.id}>
-                                            {smallCategory.small_category_name}
-                                        </option>
-                                    ))
-                                ) : (
-                                    <option value="">No small categories available</option>
-                                )}
-                            </select>
-                        </div>
-
-
-                        {/* Product Name */}
-                        <div>
-                            <label htmlFor="name" className="block text-sm font-medium text-gray-700">Product Name</label>
+            <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-6">
+                {/* Left Side (Product Details) */}
+                <div>
+                    <h2 className="text-lg font-semibold">Basic Information</h2>
+                    {['name', 'description', 'price', 'discount_price', 'discount_percentage', 'rating', 'reviews', 'color', 'brand', 'meter', 'size', 'items_stock'].map((field) => (
+                        <div key={field} className="mb-4">
+                            <label className="block mb-2 capitalize">{field.replace('_', ' ')}</label>
                             <input
                                 type="text"
-                                id="name"
-                                name="name"
-                                value={productData.name}
-                                onChange={handleInputChange}
-                                className="mt-2 block w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                placeholder="Product Name"
-                                required
+                                name={field}
+                                value={(formData as any)[field]}
+                                onChange={handleChange}
+                                className="w-full border px-3 py-2 rounded-md"
                             />
                         </div>
+                    ))}
 
-                        {/* Price */}
-                        <div>
-                            <label htmlFor="price" className="block text-sm font-medium text-gray-700">Price</label>
-                            <input
-                                type="number"
-                                id="price"
-                                name="price"
-                                value={productData.price}
-                                onChange={handleInputChange}
-                                className="mt-2 block w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                placeholder="Price"
-                                required
-                            />
-                        </div>
+                    <label className="block mb-2">Category</label>
+                    <select
+                        name="category_id"
+                        value={formData.category_id}
+                        onChange={handleChange}
+                        className="w-full border px-3 py-2 rounded-md mb-4"
+                    >
+                        <option value="">Select Category</option>
+                        {categories.map((cat) => (
+                            <option key={cat.id} value={cat.id}>{cat.category_name}</option>
+                        ))}
+                    </select>
 
-                        {/* Discount Price */}
-                        <div>
-                            <label htmlFor="discount_price" className="block text-sm font-medium text-gray-700">Discount Price</label>
-                            <input
-                                type="number"
-                                id="discount_price"
-                                name="discount_price"
-                                value={productData.discount_price}
-                                onChange={handleInputChange}
-                                className="mt-2 block w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                placeholder="Discount Price"
-                            />
-                        </div>
+                    <label className="block mb-2">Subcategory</label>
+                    <select
+                        name="subcategory_id"
+                        value={formData.subcategory_id}
+                        onChange={handleChange}
+                        className="w-full border px-3 py-2 rounded-md mb-4"
+                    >
+                        <option value="">Select Subcategory</option>
+                        {subcategories.map((sub) => (
+                            <option key={sub.id} value={sub.id}>{sub.subCategoryName}</option>
+                        ))}
+                    </select>
 
-                        {/* Discount Percentage */}
-                        <div>
-                            <label htmlFor="discount_percentage" className="block text-sm font-medium text-gray-700">Discount Percentage</label>
-                            <input
-                                type="number"
-                                id="discount_percentage"
-                                name="discount_percentage"
-                                value={productData.discount_percentage}
-                                onChange={handleInputChange}
-                                className="mt-2 block w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                placeholder="Discount Percentage"
-                            />
-                        </div>
-
-                        {/* Rating */}
-                        <div>
-                            <label htmlFor="rating" className="block text-sm font-medium text-gray-700">Rating</label>
-                            <input
-                                type="number"
-                                id="rating"
-                                name="rating"
-                                value={productData.rating}
-                                onChange={handleInputChange}
-                                className="mt-2 block w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                placeholder="Rating"
-                            />
-                        </div>
-
-                        {/* Reviews */}
-                        <div>
-                            <label htmlFor="reviews" className="block text-sm font-medium text-gray-700">Reviews</label>
-                            <input
-                                type="number"
-                                id="reviews"
-                                name="reviews"
-                                value={productData.reviews}
-                                onChange={handleInputChange}
-                                className="mt-2 block w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                placeholder="Reviews"
-                            />
-                        </div>
-
-                        {/* Description */}
-                        <div>
-                            <label htmlFor="description" className="block text-sm font-medium text-gray-700">Description</label>
-                            <textarea
-                                id="description"
-                                name="description"
-                                value={productData.description}
-                                onChange={handleInputChange}
-                                className="mt-2 block w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                placeholder="Description"
-                            />
-                        </div>
-
-                        {/* Color */}
-                        <div>
-                            <label htmlFor="color" className="block text-sm font-medium text-gray-700">Color</label>
-                            <input
-                                type="text"
-                                id="color"
-                                name="color"
-                                value={productData.color}
-                                onChange={handleInputChange}
-                                className="mt-2 block w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                placeholder="Color"
-                            />
-                        </div>
-
-                        {/* Brand */}
-                        <div>
-                            <label htmlFor="brand" className="block text-sm font-medium text-gray-700">Brand</label>
-                            <input
-                                type="text"
-                                id="brand"
-                                name="brand"
-                                value={productData.brand}
-                                onChange={handleInputChange}
-                                className="mt-2 block w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                placeholder="Brand"
-                            />
-                        </div>
-
-                        {/* Meter */}
-                        <div>
-                            <label htmlFor="meter" className="block text-sm font-medium text-gray-700">Meter</label>
-                            <input
-                                type="text"
-                                id="meter"
-                                name="meter"
-                                value={productData.meter}
-                                onChange={handleInputChange}
-                                className="mt-2 block w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                placeholder="Meter"
-                            />
-                        </div>
-
-                        {/* Size */}
-                        <div>
-                            <label htmlFor="size" className="block text-sm font-medium text-gray-700">Size</label>
-                            <input
-                                type="text"
-                                id="size"
-                                name="size"
-                                value={productData.size}
-                                onChange={handleInputChange}
-                                className="mt-2 block w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                placeholder="Size"
-                            />
-                        </div>
-
-                        {/* Items in Stock */}
-                        <div>
-                            <label htmlFor="items_stock" className="block text-sm font-medium text-gray-700">Items in Stock</label>
-                            <input
-                                type="number"
-                                id="items_stock"
-                                name="items_stock"
-                                value={productData.items_stock}
-                                onChange={handleInputChange}
-                                className="mt-2 block w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                placeholder="Items in Stock"
-                            />
-                        </div>
-
-                        {/* Featured, Deal of the Day, etc. */}
-                        <div>
-                            <label className="flex items-center">
-                                <input
-                                    type="checkbox"
-                                    name="featured"
-                                    checked={productData.featured}
-                                    onChange={handleInputChange}
-                                    className="mr-2"
-                                />
-                                Featured Product
-                            </label>
-                            <label className="flex items-center">
-                                <input
-                                    type="checkbox"
-                                    name="deal_of_the_day"
-                                    checked={productData.deal_of_the_day}
-                                    onChange={handleInputChange}
-                                    className="mr-2"
-                                />
-                                Deal of the Day
-                            </label>
-                            <label className="flex items-center">
-                                <input
-                                    type="checkbox"
-                                    name="best_seller"
-                                    checked={productData.best_seller}
-                                    onChange={handleInputChange}
-                                    className="mr-2"
-                                />
-                                Best Seller
-                            </label>
-                            <label className="flex items-center">
-                                <input
-                                    type="checkbox"
-                                    name="top_offer_product"
-                                    checked={productData.top_offer_product}
-                                    onChange={handleInputChange}
-                                    className="mr-2"
-                                />
-                                Top Offer Product
-                            </label>
-                        </div>
-
-                        {/* Submit Button */}
-                        <div>
-                            <Button type="submit" disabled={isLoading} className="w-full">
-                                {isLoading ? 'Creating Product...' : 'Create Product'}
-                            </Button>
-                        </div>
-                    </form>
+                    <label className="block mb-2">Small Category</label>
+                    <select
+                        name="small_category_id"
+                        value={formData.small_category_id}
+                        onChange={handleChange}
+                        className="w-full border px-3 py-2 rounded-md"
+                    >
+                        <option value="">Select Small Category</option>
+                        {smallCategories.map((small) => (
+                            <option key={small.id} value={small.id}>{small.small_category_name}</option>
+                        ))}
+                    </select>
                 </div>
 
-                {/* Right Side: Product Image */}
-                <div className="space-y-6">
-                    <h4 className="text-lg font-medium text-gray-600">Product Image</h4>
-                    <p className="text-gray-500 text-sm">Add or change image for the product</p>
-
-                    {/* Product Image Preview */}
-                    {productImagePreview && (
-                        <div className="mb-4">
-                            <img src={productImagePreview} alt="Product Preview" className="w-32 h-32 object-cover" />
-                        </div>
-                    )}
-
-                    <div className="flex justify-center items-center border-2 border-dashed border-gray-300 p-4 rounded-lg">
-
-                        <input
-                            type="file"
-                            name="productImage"
-                            accept="image/*"
-                            onChange={handleImageChange}
-                            className="hidden"
-                            id="productImage"
-                            required
-                        />
-                        <label
-                            htmlFor="productImage"
-                            className="cursor-pointer text-gray-700 hover:text-blue-500"
-                        >
-
-                            <div className="text-center">
-                                <div className="mb-4">
-                                    <span className="text-xl">&#128247;</span>
-                                </div>
-                                <p className="text-sm text-gray-600">Drop your image here, or browse</p>
-                                <p className="text-xs text-gray-400">Support: jpeg, png</p>
+                {/* Right Side (Images and Special Features) */}
+                <div>
+                    {/* Product Image (Main Image) */}
+                    <h2 className="text-lg font-semibold">Product Image</h2>
+                    <p className="text-sm text-gray-500 mb-4">Add or change image for the product</p>
+                    <div className="border-2 border-dashed border-gray-300 rounded-md p-6 flex flex-col items-center">
+                        {formData.images ? (
+                            <div className="relative">
+                                <img src={URL.createObjectURL(formData.images)} alt="Uploaded Image" className="w-24 h-24 object-cover rounded-md" />
+                                <FaTimesCircle
+                                    className="absolute top-0 right-0 text-red-500 text-xl cursor-pointer"
+                                    onClick={handleRemoveImage}
+                                />
                             </div>
-                        </label>
+                        ) : (
+                            <>
+                                <input
+                                    type="file"
+                                    accept="image/jpeg,image/png"
+                                    onChange={handleImageChange}
+                                    className="hidden"
+                                    id="imageUpload"
+                                />
+                                <label htmlFor="imageUpload" className="cursor-pointer text-blue-500 flex flex-col items-center gap-2">
+                                    <FaImage className="w-12 h-12 text-gray-400" />
+                                    Drop your image here, or <span className="font-bold">browse</span>
+                                </label>
+                            </>
+                        )}
+                        <p className="text-xs text-gray-400 mt-2">Support: jpeg, png</p>
                     </div>
 
-                    {/* Additional Images Preview */}
-                    <h4 className="text-lg font-medium text-gray-600 mt-6">Additional Images</h4>
-                    {additionalImagesPreviews.length > 0 && (
-                        <div className="flex gap-4">
-                            {additionalImagesPreviews.map((preview, index) => (
-                                <div key={index} className="relative w-20 h-20">
-                                    <img src={preview} alt={`Additional Image ${index + 1}`} className="object-cover w-full h-full" />
-                                    <button
-                                        type="button"
-                                        onClick={() => handleRemoveImage(index)}
-                                        className="absolute top-0 right-0 bg-red-500 text-white p-1 rounded-full text-sm"
-                                    >
-                                        &#10005;
-                                    </button>
-                                </div>
-                            ))}
-                        </div>
-                    )}
+                    {/* Additional Images */}
+                    <label className="block mt-4">Additional Images</label>
+                    <input
+                        type="file"
+                        multiple
+                        accept="image/jpeg,image/png"
+                        onChange={handleAdditionalImagesChange}
+                        className="w-full border px-3 py-2 rounded-md"
+                    />
 
+                    {formData.additional_images.map((img, index) => (
+                        <div key={index} className="flex items-center gap-2 mt-2">
+                            <img src={URL.createObjectURL(img)} alt="Additional Image" className="w-16 h-16 object-cover rounded-md" />
+                            <FaTimesCircle
+                                className="text-red-500 text-xl cursor-pointer"
+                                onClick={() => handleRemoveAdditionalImage(index)}
+                            />
+                        </div>
+                    ))}
+
+                    {/* Special Features */}
                     <div className="mt-4">
-                        <input
-                            type="file"
-                            name="additional_images"
-                            accept="image/*"
-                            onChange={handleAdditionalImagesChange}
-                            multiple
-                            className="block w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
+                        {['featured', 'deal_of_the_day', 'best_seller', 'top_offer_product'].map((option) => (
+                            <div key={option} className="flex items-center gap-2 mb-2">
+                                <input
+                                    type="checkbox"
+                                    name={option}
+                                    checked={(formData as any)[option]}
+                                    onChange={(e) => setFormData({ ...formData, [option]: e.target.checked })}
+                                />
+                                <label>{option.replace('_', ' ').toUpperCase()}</label>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Save Button */}
+                    <div className="col-span-2 flex justify-end mt-6">
+                        <Button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded">Save Product</Button>
                     </div>
                 </div>
-            </div>
+            </form>
         </div>
     );
 };

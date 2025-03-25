@@ -1,26 +1,37 @@
-import { useState } from 'react';
-import { useDispatch } from 'react-redux';
-import { createSubCategory } from '../../app/reducer/subCategorySlice'; // Import createSubCategory action
-import { useNavigate } from 'react-router-dom'; // For redirecting after creating subcategory
-import Button from '../../components/ui/button/Button'; // Assuming you have a Button component
+import { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { createSubCategory } from '../../app/reducer/subCategorySlice';
+import { fetchCategories, selectCategories, selectCategoryStatus, selectCategoryError } from '../../app/reducer/categorySlice';
+import { useNavigate } from 'react-router-dom';
+import Button from '../../components/ui/button/Button';
 
 const AddSubCategory: React.FC = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  // Form data for subcategory creation
+  // Fetch categories
+  const categories = useSelector(selectCategories);
+  const categoryStatus = useSelector(selectCategoryStatus);
+  const categoryError = useSelector(selectCategoryError);
+
   const [subCategoryData, setSubCategoryData] = useState({
     subCategoryName: '',
     category_name: '',
-    category_id: '', // This should ideally be selected from a list of categories
-    image: null as File | null,
+    category_id: '', // Removed image data field
   });
 
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
+  // Fetch categories when the component mounts
+  useEffect(() => {
+    if (categoryStatus === 'idle') {
+      dispatch(fetchCategories());
+    }
+  }, [categoryStatus, dispatch]);
+
   // Handle input change for text fields
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setSubCategoryData((prevData) => ({
       ...prevData,
@@ -28,21 +39,11 @@ const AddSubCategory: React.FC = () => {
     }));
   };
 
-  // Handle image file selection
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      setSubCategoryData((prevData) => ({
-        ...prevData,
-        image: e.target.files[0], // Set the selected image file
-      }));
-    }
-  };
-
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!subCategoryData.subCategoryName || !subCategoryData.image || !subCategoryData.category_id) {
+    if (!subCategoryData.subCategoryName || !subCategoryData.category_id) {
       setError('All fields are required.');
       return;
     }
@@ -50,16 +51,9 @@ const AddSubCategory: React.FC = () => {
     setIsLoading(true);
     setError(null);
 
-    // Create a new FormData object to send the form data, including the image file
-    const formData = new FormData();
-    formData.append('subCategoryName', subCategoryData.subCategoryName);
-    formData.append('category_name', subCategoryData.category_name);
-    formData.append('category_id', subCategoryData.category_id);
-    formData.append('image', subCategoryData.image);
-
     try {
       // Dispatch the createSubCategory action to send the data to the backend
-      await dispatch(createSubCategory(formData));
+      await dispatch(createSubCategory(subCategoryData));
 
       // Redirect to the subcategory list page after successful creation
       navigate('/subcategory-list');
@@ -78,6 +72,10 @@ const AddSubCategory: React.FC = () => {
       {error && (
         <div className="bg-red-100 text-red-800 p-4 mb-4 rounded-md">{error}</div>
       )}
+
+      {/* Display category loading/error */}
+      {categoryStatus === 'loading' && <p>Loading categories...</p>}
+      {categoryError && <p className="text-red-500">{categoryError}</p>}
 
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Subcategory Name */}
@@ -108,31 +106,24 @@ const AddSubCategory: React.FC = () => {
           />
         </div>
 
-        {/* Category ID */}
+        {/* Category ID (Dropdown from categories) */}
         <div>
-          <label htmlFor="category_id" className="block text-sm font-medium text-gray-700">Category ID</label>
-          <input
-            type="text"
+          <label htmlFor="category_id" className="block text-sm font-medium text-gray-700">Category</label>
+          <select
             id="category_id"
             name="category_id"
             value={subCategoryData.category_id}
             onChange={handleInputChange}
             className="mt-2 block w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             required
-          />
-        </div>
-
-        {/* Category Image */}
-        <div>
-          <label htmlFor="image" className="block text-sm font-medium text-gray-700">Subcategory Image</label>
-          <input
-            type="file"
-            id="image"
-            onChange={handleImageChange}
-            accept="image/*"
-            className="mt-2 block w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            required
-          />
+          >
+            <option value="">Select Category</option>
+            {categories.map((category) => (
+              <option key={category.id} value={category.id}>
+                {category.name}
+              </option>
+            ))}
+          </select>
         </div>
 
         {/* Submit Button */}

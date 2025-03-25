@@ -118,7 +118,7 @@ const SmallCategoryList: React.FC = () => {
                 <TableCell className="py-3">{index + 1}</TableCell> {/* Serial Number */}
                 <TableCell className="py-3">{smallCategory.small_category_name}</TableCell>
                 <TableCell className="py-3">{smallCategory.category_name}</TableCell>
-                <TableCell className="py-3">{smallCategory.subcategory_name}</TableCell>
+                <TableCell className="py-3">{smallCategory.subCategoryName}</TableCell>
                 <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">
                   {new Date(smallCategory.created_at).toLocaleString()}
                 </TableCell>

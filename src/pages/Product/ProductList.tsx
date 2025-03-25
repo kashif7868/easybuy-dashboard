@@ -1,171 +1,140 @@
-import { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
-  fetchProducts,
-  selectProducts,
-  selectProductStatus,
-  selectProductError,
-  deleteProduct,
-} from '../../app/reducer/productSlice'; // Correct import
-import { FaEye, FaEdit, FaTrash } from 'react-icons/fa'; // React icons for actions
-import Button from '../../components/ui/button/Button'; // Assuming you have a Button component
-import { Table, TableBody, TableCell, TableHeader, TableRow } from "../../components/ui/table"; // Assuming you have table components
-
-// Define the interface for the product data
-interface Product {
-  id: number;
-  name: string;
-  price: string;
-  discount_price: string;
-  discount_percentage: string;
-  rating: number;
-  reviews: number;
-  description: string;
-  images: string;
-  additional_images: string[];
-  color: string;
-  brand: string;
-  meter: string;
-  size: string;
-  items_stock: number;
-  category_id: number;
-  subcategory_id: number;
-  small_category_id: number;
-  featured: boolean;
-  deal_of_the_day: boolean;
-  best_seller: boolean;
-  top_offer_product: boolean;
-  created_at: string;
-  updated_at: string;
-  category: {
-    category_name: string;
-  };
-  subcategory: {
-    subCategoryName: string;
-  };
-  small_category: {
-    small_category_name: string;
-  };
-}
+    fetchProducts,
+    deleteProduct,
+    selectProducts,
+    selectProductStatus,
+    selectProductError
+} from '../../app/reducer/productSlice';
+import { useNavigate } from 'react-router-dom';
+import Button from '../../components/ui/button/Button'; // Corrected Button import
+import { Table, TableBody, TableCell, TableHeader, TableRow } from "../../components/ui/table";
+import { FaEdit, FaTrash } from 'react-icons/fa';
+import { IoAddCircle } from 'react-icons/io5';
+import { utils, writeFile } from 'xlsx';
 
 const ProductList: React.FC = () => {
-  const dispatch = useDispatch();
-  const products = useSelector(selectProducts); // Selector to get the list of products
-  const status = useSelector(selectProductStatus);
-  const error = useSelector(selectProductError);
+    const dispatch = useDispatch<any>();
+    const products = useSelector(selectProducts);
+    const loading = useSelector(selectProductStatus);
+    const error = useSelector(selectProductError);
+    const navigate = useNavigate();
 
-  // Fetch products on component mount
-  useEffect(() => {
-    if (status === 'idle') {
-      dispatch(fetchProducts());
-    }
-  }, [dispatch, status]);
+    const [search, setSearch] = useState("");
 
-  // Handle loading and error states
-  if (status === 'loading') {
-    return <div className="flex justify-center items-center h-screen text-xl font-semibold">Loading...</div>;
-  }
+    useEffect(() => {
+        dispatch(fetchProducts());
+    }, [dispatch]);
 
-  if (status === 'failed') {
-    return (
-      <div className="flex justify-center items-center h-screen text-xl font-semibold text-red-600">
-        Error: {error}
-      </div>
+    const handleDelete = (id: number) => {
+        if (confirm('Are you sure you want to delete this product?')) {
+            dispatch(deleteProduct(id));
+        }
+    };
+
+    const handleExport = () => {
+        const data = products.map((product) => ({
+            ID: product.id,
+            Name: product.name,
+            Price: `$${product.price}`,
+            Discount_Price: `$${product.discount_price}`,
+            Discount_Percentage: `${product.discount_percentage}%`,
+            Rating: product.rating,
+            Reviews: product.reviews,
+            Description: product.description,
+            Color: product.color,
+            Brand: product.brand,
+            Meter: product.meter,
+            Size: product.size,
+            Stock: product.items_stock,
+            Category: product.category.category_name,
+            Subcategory: product.subcategory.subCategoryName,
+            Small_Category: product.small_category.small_category_name,
+            Created_At: product.created_at,
+            Updated_At: product.updated_at
+        }));
+        const worksheet = utils.json_to_sheet(data);
+        const workbook = utils.book_new();
+        utils.book_append_sheet(workbook, worksheet, "Products");
+        writeFile(workbook, "Products.xlsx");
+    };
+
+    if (loading) return <div className="text-center py-10">Loading...</div>;
+    if (error) return <div className="text-center py-10 text-red-500">Error: {error}</div>;
+
+    const filteredProducts = products.filter(product => 
+        product.name.toLowerCase().includes(search.toLowerCase())
     );
-  }
 
-  // Handle product deletion
-  const handleDelete = (id: number) => {
-    if (window.confirm('Are you sure you want to delete this product?')) {
-      dispatch(deleteProduct(id)); // Dispatch delete product action
-    }
-  };
-
-  return (
-    <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white px-4 pb-3 pt-4 dark:border-gray-800 dark:bg-white/[0.03] sm:px-6">
-      <div className="flex flex-col gap-2 mb-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">Product List</h3>
+    return (
+        <div className="container mx-auto p-4 bg-white">
+            <div className="flex justify-between items-center mb-4">
+                <h1 className="text-2xl font-bold">Products</h1>
+                <div className="flex gap-2">
+                    <input
+                        type="text"
+                        placeholder="Search product"
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        className="border px-3 py-2 rounded-md"
+                    />
+                    <Button
+                        className="bg-purple-600 text-white px-4 py-2 rounded flex items-center gap-1"
+                        onClick={handleExport}
+                    >
+                        Export
+                    </Button>
+                    <Button
+                        className="bg-purple-600 text-white px-4 py-2 rounded flex items-center gap-1"
+                        onClick={() => navigate('/add-product')}
+                    >
+                        <IoAddCircle size={18} /> Add Product
+                    </Button>
+                </div>
+            </div>
+            <Table>
+                <TableHeader>
+                    <TableRow>
+                        <TableCell>Name</TableCell>
+                        <TableCell>Category</TableCell>
+                        <TableCell>Quantity</TableCell>
+                        <TableCell>Status</TableCell>
+                        <TableCell>Price</TableCell>
+                        <TableCell>Actions</TableCell>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {filteredProducts.map((product) => (
+                        <TableRow key={product.id}>
+                            <TableCell className="flex items-center gap-2">
+                                <img
+                                    src={`http://localhost:8000/storage/${product.images}`}
+                                    alt={product.name}
+                                    className="w-10 h-10 object-cover rounded-md"
+                                />
+                                {product.name}
+                            </TableCell>
+                            <TableCell>{product.category.category_name}</TableCell>
+                            <TableCell>{product.items_stock}</TableCell>
+                            <TableCell className="text-green-500 font-semibold">In Stock</TableCell>
+                            <TableCell>${product.price}</TableCell>
+                            <TableCell className="flex gap-2">
+                                <FaEdit
+                                    className="text-gray-500 cursor-pointer"
+                                    onClick={() => navigate(`/edit-product/${product.id}`)}
+                                />
+                                <FaTrash
+                                    className="text-gray-500 cursor-pointer"
+                                    onClick={() => handleDelete(product.id)}
+                                />
+                            </TableCell>
+                        </TableRow>
+                    ))}
+                </TableBody>
+            </Table>
         </div>
-      </div>
-      <div className="max-w-full overflow-x-auto">
-        <Table>
-          {/* Table Header */}
-          <TableHeader className="border-gray-100 dark:border-gray-800 border-y">
-            <TableRow>
-              <TableCell
-                isHeader
-                className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-              >
-                Sr. No.
-              </TableCell>
-              <TableCell
-                isHeader
-                className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-              >
-                Product Name
-              </TableCell>
-              <TableCell
-                isHeader
-                className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-              >
-                Category
-              </TableCell>
-              <TableCell
-                isHeader
-                className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-              >
-                Subcategory
-              </TableCell>
-              <TableCell
-                isHeader
-                className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-              >
-                Small Category
-              </TableCell>
-              <TableCell
-                isHeader
-                className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-              >
-                Price
-              </TableCell>
-              <TableCell
-                isHeader
-                className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-              >
-                Actions
-              </TableCell>
-            </TableRow>
-          </TableHeader>
-
-          {/* Table Body */}
-          <TableBody className="divide-y divide-gray-100 dark:divide-gray-800">
-            {products.map((product: Product, index: number) => (
-              <TableRow key={product.id}>
-                <TableCell className="py-3">{index + 1}</TableCell> {/* Serial Number */}
-                <TableCell className="py-3">{product.name}</TableCell>
-                <TableCell className="py-3">{product.category.category_name}</TableCell>
-                <TableCell className="py-3">{product.subcategory.subCategoryName}</TableCell>
-                <TableCell className="py-3">{product.small_category.small_category_name}</TableCell>
-                <TableCell className="py-3">{product.price}</TableCell>
-                <TableCell className="py-3">
-                  <Button className="mr-2">
-                    <FaEye /> {/* View Icon */}
-                  </Button>
-                  <Button className="mr-2" onClick={() => alert(`Editing product with ID: ${product.id}`)}>
-                    <FaEdit /> {/* Edit Icon */}
-                  </Button>
-                  <Button variant="danger" onClick={() => handleDelete(product.id)}>
-                    <FaTrash /> {/* Delete Icon */}
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-    </div>
-  );
+    );
 };
 
 export default ProductList;
