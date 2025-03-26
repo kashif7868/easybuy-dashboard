@@ -94,7 +94,6 @@ export const fetchProductById = createAsyncThunk<Product, number, { rejectValue:
 );
 
 // Create a new product
-// Create a new product
 export const createProduct = createAsyncThunk<Product, FormData, { rejectValue: string }>(
   'product/createProduct',
   async (formData, { rejectWithValue }) => {
