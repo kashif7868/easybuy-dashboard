@@ -25,6 +25,8 @@ import BasicTableOne from "../tables/BasicTables/BasicTableOne";
 import OrderList from "../../pages/Order/OrderList";
 import OrderDetails from "../../pages/Order/OrderDetails";
 import UserList from "../../pages/AuthPages/UserList";
+import NotificationList from "../../pages/Notification/NotificationList";
+import NotificationDetail from "../../pages/Notification/NotificationDetail";
 const AllPages = () => {
   return (
     <>
@@ -34,7 +36,7 @@ const AllPages = () => {
         <Route path="/slider-list" element={<SliderList />} />
         <Route path="/add-slider" element={<AddSlider />} />
         <Route path="/slider-details/:id" element={< DetailsSilder />} />
-        <Route path="/slider-edit/:id" element={<UpdateSlider />} /> 
+        <Route path="/slider-edit/:id" element={<UpdateSlider />} />
         {/* banner */}
         <Route path="/banner-list" element={<BannerList />} />
         <Route path="/add-banner" element={<AddBanner />} />
@@ -61,6 +63,9 @@ const AllPages = () => {
         {/* basic table */}
         <Route path="/basic-tables" element={<BasicTableOne />} />
 
+        {/* Notification */}
+        <Route path="/notification-list" element={<NotificationList />} />
+        <Route path="/notification-detail/:id" element={<NotificationDetail />} />
         {/* profile */}
         <Route path="/profile" element={<UserProfiles />} />
         <Route path="/blank" element={<Blank />} />
