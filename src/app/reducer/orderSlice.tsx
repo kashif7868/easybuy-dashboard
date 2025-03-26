@@ -58,11 +58,19 @@ interface Order {
   updated_at: string;
 }
 
+interface Metrics {
+  customersCount: number;
+  ordersCount: number;
+  totalSales: string;
+  status: string;
+}
+
 interface OrderState {
   orders: Order[];
   currentOrder: Order | null;
   status: 'idle' | 'loading' | 'succeeded' | 'failed';
   error: string | null;
+  metrics: Metrics | null; // New field to hold metrics
 }
 
 // Async thunk to fetch all orders
@@ -73,6 +81,22 @@ export const fetchOrders = createAsyncThunk<Order[]>(
       const response = await fetch('http://localhost:8000/api/orders');
       if (!response.ok) {
         throw new Error('Failed to fetch orders');
+      }
+      return await response.json();
+    } catch (error: any) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+// Async thunk to fetch metrics
+export const fetchMetrics = createAsyncThunk<Metrics>(
+  'order/fetchMetrics',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await fetch('http://localhost:8000/api/metrics');
+      if (!response.ok) {
+        throw new Error('Failed to fetch metrics');
       }
       return await response.json();
     } catch (error: any) {
@@ -142,6 +166,7 @@ const orderSlice = createSlice({
     currentOrder: null,
     status: 'idle',
     error: null,
+    metrics: null, // Initialize metrics as null
   } as OrderState,
   reducers: {},
   extraReducers: (builder) => {
@@ -186,11 +211,23 @@ const orderSlice = createSlice({
       .addCase(updateOrderStatus.pending, (state) => {
         state.status = 'loading';
       })
-      .addCase(updateOrderStatus.fulfilled, (state, action) => {
+      .addCase(updateOrderStatus.fulfilled, (state) => {
         state.status = 'succeeded';
         // Update order status locally if necessary
       })
       .addCase(updateOrderStatus.rejected, (state, action: PayloadAction<string>) => {
+        state.status = 'failed';
+        state.error = action.payload;
+      })
+      // Handle fetch metrics
+      .addCase(fetchMetrics.pending, (state) => {
+        state.status = 'loading';
+      })
+      .addCase(fetchMetrics.fulfilled, (state, action: PayloadAction<Metrics>) => {
+        state.status = 'succeeded';
+        state.metrics = action.payload;
+      })
+      .addCase(fetchMetrics.rejected, (state, action: PayloadAction<string>) => {
         state.status = 'failed';
         state.error = action.payload;
       });

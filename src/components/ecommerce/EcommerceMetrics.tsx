@@ -1,3 +1,5 @@
+import React, { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import {
   ArrowDownIcon,
   ArrowUpIcon,
@@ -5,8 +7,27 @@ import {
   GroupIcon,
 } from "../../icons";
 import Badge from "../ui/badge/Badge";
+import { fetchMetrics } from "../../app/reducer/orderSlice"; // Import the fetchMetrics action
 
 export default function EcommerceMetrics() {
+  const dispatch = useDispatch();
+  const { metrics, status } = useSelector((state: any) => state.order); // Access metrics from the state
+
+  // Fetch metrics data when the component mounts
+  useEffect(() => {
+    if (status === "idle") {
+      dispatch(fetchMetrics());
+    }
+  }, [dispatch, status]);
+
+  if (status === "loading") {
+    return <div>Loading...</div>; // Show loading state while fetching
+  }
+
+  if (status === "failed" || !metrics) {
+    return <div>Error loading metrics</div>; // Show error if fetch failed
+  }
+
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 md:gap-6">
       {/* Metric Item Start (Customers) */}
@@ -21,7 +42,7 @@ export default function EcommerceMetrics() {
               Customers
             </span>
             <h4 className="mt-2 font-bold text-gray-800 text-title-sm dark:text-white/90">
-              3,782
+              {metrics.customersCount}
             </h4>
           </div>
           <Badge color="success">
@@ -43,7 +64,7 @@ export default function EcommerceMetrics() {
               Orders
             </span>
             <h4 className="mt-2 font-bold text-gray-800 text-title-sm dark:text-white/90">
-              5,359
+              {metrics.ordersCount}
             </h4>
           </div>
 
@@ -67,7 +88,7 @@ export default function EcommerceMetrics() {
               Total Sales (PKR)
             </span>
             <h4 className="mt-2 font-bold text-gray-800 text-title-sm dark:text-white/90">
-              ₨ 1,275,450
+              ₨ {metrics.totalSales}
             </h4>
           </div>
 
